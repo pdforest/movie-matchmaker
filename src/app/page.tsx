@@ -34,7 +34,7 @@ export default function Home() {
     setHistory((prev) => [...prev, currentMovie]);
 
     if (direction === "right") {
-      saveMovie(currentMovie.id);
+      saveMovie(currentMovie); // Passing the whole object instead of currentMovie.id
     } else {
       dismissMovie(currentMovie.id);
     }

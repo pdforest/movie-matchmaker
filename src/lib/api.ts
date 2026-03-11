@@ -1,29 +1,43 @@
-import { Movie, mockMovies } from './mock-data';
-export type { Movie } from './mock-data';
-export { mockMovies } from './mock-data';
-
-// Simulate an API delay
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// Define the Movie interface matching what the app expects
+export interface Movie {
+  id: string;
+  title: string;
+  posterUrl: string;
+  description: string;
+  rating: number;
+  releaseYear: number;
+  genres: string[];
+}
 
 export async function fetchMovies(): Promise<Movie[]> {
-  await delay(800); // simulate network latency
-  // In a real app, this would be an API call, we just shuffle the mock data
-  return [...mockMovies].sort(() => Math.random() - 0.5);
+  try {
+    const response = await fetch('/api/movies');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch movies: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching movies from API:", error);
+    return []; // Return an empty array on failure
+  }
 }
 
 // Simple in-memory save/dismiss tracking for demonstration
 // Realistic apps would use local storage, a real DB, or React context
-let savedMovieIds: string[] = [];
+let savedMovies: Movie[] = [];
 let dismissedMovieIds: string[] = [];
 
-export function saveMovie(id: string) {
-  if (!savedMovieIds.includes(id)) {
-    savedMovieIds.push(id);
+// Notice we changed saveMovie to accept the WHOLE Movie object 
+// because we don't have the mockMovies array to pull from anymore.
+export function saveMovie(movie: Movie) {
+  if (!savedMovies.some(m => m.id === movie.id)) {
+    savedMovies.push(movie);
   }
 }
 
 export function removeMovie(id: string) {
-  savedMovieIds = savedMovieIds.filter(savedId => savedId !== id);
+  savedMovies = savedMovies.filter(savedMovie => savedMovie.id !== id);
 }
 
 export function dismissMovie(id: string) {
@@ -33,11 +47,11 @@ export function dismissMovie(id: string) {
 }
 
 export function getSavedMovies(): Movie[] {
-  return mockMovies.filter((movie) => savedMovieIds.includes(movie.id));
+  return [...savedMovies];
 }
 
 // Clear state for easy resetting
 export function clearState() {
-  savedMovieIds = [];
+  savedMovies = [];
   dismissedMovieIds = [];
 }

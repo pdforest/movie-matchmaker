@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useMotionValue, useTransform, useAnimation } from "framer-motion";
-import { Movie } from "@/lib/mock-data";
+import { Movie } from "@/lib/api";
 import { Star, Clock } from "lucide-react";
 import { useState } from "react";
 

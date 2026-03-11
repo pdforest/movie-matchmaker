@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, Trash2 } from "lucide-react";
-import { Movie } from "@/lib/mock-data";
+import { Movie } from "@/lib/api";
 
 interface WatchlistProps {
   isOpen: boolean;
