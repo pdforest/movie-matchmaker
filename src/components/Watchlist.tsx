@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, Trash2 } from "lucide-react";
 import { Movie } from "@/lib/api";
@@ -12,6 +13,7 @@ interface WatchlistProps {
 }
 
 export default function Watchlist({ isOpen, onClose, movies, onRemoveMovie }: WatchlistProps) {
+  const [activeMovieId, setActiveMovieId] = useState<string | null>(null);
   return (
     <AnimatePresence>
       {isOpen && (
@@ -63,18 +65,39 @@ export default function Watchlist({ isOpen, onClose, movies, onRemoveMovie }: Wa
                     {movies.map((movie) => (
                       <motion.div
                         layout
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
+                        initial="hidden"
+                        animate={activeMovieId === movie.id ? "hover" : "visible"}
+                        exit="hidden"
+                        whileHover="hover"
+                        onTap={() => setActiveMovieId(activeMovieId === movie.id ? null : movie.id)}
+                        variants={{
+                          hidden: { opacity: 0, scale: 0.8 },
+                          visible: { opacity: 1, scale: 1 },
+                          hover: { opacity: 1, scale: 1 }
+                        }}
                         key={movie.id}
-                        className="group relative aspect-[2/3] rounded-xl overflow-hidden bg-neutral-800"
+                        className="relative aspect-[2/3] rounded-xl overflow-hidden bg-neutral-800 cursor-pointer"
                       >
-                        <img
+                        <motion.img
                           src={movie.posterUrl}
                           alt={movie.title}
-                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          variants={{
+                            hidden: { scale: 1 },
+                            visible: { scale: 1 },
+                            hover: { scale: 1.05 }
+                          }}
+                          transition={{ duration: 0.3 }}
+                          className="absolute inset-0 w-full h-full object-cover"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+                        <motion.div 
+                          variants={{
+                            hidden: { opacity: 0 },
+                            visible: { opacity: 0 },
+                            hover: { opacity: 1 }
+                          }}
+                          transition={{ duration: 0.3 }}
+                          className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-3 pointer-events-none"
+                        >
                           <p className="text-white font-medium text-sm line-clamp-2 leading-tight">
                             {movie.title}
                           </p>
@@ -82,19 +105,28 @@ export default function Watchlist({ isOpen, onClose, movies, onRemoveMovie }: Wa
                             <Star className="w-3 h-3 fill-yellow-500" />
                             {movie.rating}
                           </div>
-                        </div>
+                        </motion.div>
 
                         {/* Remove Button Overlay */}
-                        <button
+                        <motion.button
+                          variants={{
+                            hidden: { opacity: 0, scale: 0.8 },
+                            visible: { opacity: 0, scale: 0.8 },
+                            hover: { opacity: 1, scale: 1 }
+                          }}
+                          transition={{ duration: 0.2 }}
                           onClick={(e) => {
                             e.stopPropagation();
                             onRemoveMovie(movie.id);
                           }}
-                          className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/90 backdrop-blur-md rounded-full text-neutral-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 z-10"
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                          }}
+                          className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/90 backdrop-blur-md rounded-full text-neutral-300 hover:text-red-500 transition-colors z-10"
                           aria-label={`Remove ${movie.title} from watchlist`}
                         >
                           <Trash2 className="w-4 h-4" />
-                        </button>
+                        </motion.button>
                       </motion.div>
                     ))}
                   </AnimatePresence>
