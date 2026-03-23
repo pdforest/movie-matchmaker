@@ -28,21 +28,41 @@ export async function fetchMovies(): Promise<Movie[]> {
 let savedMovies: Movie[] = [];
 let dismissedMovieIds: string[] = [];
 
-// Notice we changed saveMovie to accept the WHOLE Movie object 
-// because we don't have the mockMovies array to pull from anymore.
+if (typeof window !== "undefined") {
+  try {
+    const storedMovies = localStorage.getItem("matchmaker_saved");
+    if (storedMovies) savedMovies = JSON.parse(storedMovies);
+
+    const storedDismissed = localStorage.getItem("matchmaker_dismissed");
+    if (storedDismissed) dismissedMovieIds = JSON.parse(storedDismissed);
+  } catch (error) {
+    console.error("Failed to parse local storage data:", error);
+  }
+}
+
+const persist = () => {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("matchmaker_saved", JSON.stringify(savedMovies));
+    localStorage.setItem("matchmaker_dismissed", JSON.stringify(dismissedMovieIds));
+  }
+};
+
 export function saveMovie(movie: Movie) {
   if (!savedMovies.some(m => m.id === movie.id)) {
     savedMovies.push(movie);
+    persist();
   }
 }
 
 export function removeMovie(id: string) {
   savedMovies = savedMovies.filter(savedMovie => savedMovie.id !== id);
+  persist();
 }
 
 export function dismissMovie(id: string) {
   if (!dismissedMovieIds.includes(id)) {
     dismissedMovieIds.push(id);
+    persist();
   }
 }
 
@@ -54,4 +74,5 @@ export function getSavedMovies(): Movie[] {
 export function clearState() {
   savedMovies = [];
   dismissedMovieIds = [];
+  persist();
 }

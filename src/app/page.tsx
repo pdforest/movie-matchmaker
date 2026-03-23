@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Film, Menu, X } from "lucide-react";
+import { Film, Menu, X, LogOut, LogIn } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import Link from "next/link";
 import MovieCard from "@/components/MovieCard";
 import ActionButtons from "@/components/ActionButtons";
 import Watchlist from "@/components/Watchlist";
 import { fetchMovies, saveMovie, dismissMovie, getSavedMovies, removeMovie, Movie } from "@/lib/api";
+import { createClient } from "@/lib/supabase/client";
+import { logout } from "@/app/auth/actions";
+import { User } from "@supabase/supabase-js";
 
 export default function Home() {
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -14,16 +18,30 @@ export default function Home() {
   const [watchlistOpen, setWatchlistOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [updateTick, setUpdateTick] = useState(0);
+  const [isMounted, setIsMounted] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   
   // Track history for undo functionality
   const [history, setHistory] = useState<Movie[]>([]);
+  const supabase = createClient();
 
   useEffect(() => {
+    setIsMounted(true);
     fetchMovies().then((data) => {
       setMovies(data);
       setLoading(false);
     });
-  }, []);
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase.auth]);
 
   const handleSwipe = (direction: "left" | "right") => {
     if (movies.length === 0) return;
@@ -60,7 +78,7 @@ export default function Home() {
   };
 
   const activeMovie = movies[movies.length - 1];
-  const savedMoviesList = getSavedMovies();
+  const savedMoviesList = isMounted ? getSavedMovies() : [];
 
   return (
     <main className="min-h-screen flex flex-col relative overflow-hidden font-sans">
@@ -75,17 +93,38 @@ export default function Home() {
           </h1>
         </div>
         
-        <button 
-          onClick={() => setWatchlistOpen(true)}
-          className="p-2.5 bg-neutral-900 border border-neutral-800 rounded-full text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors shadow-lg relative"
-        >
-          <Menu className="w-6 h-6" />
-          {savedMoviesList.length > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-neutral-900">
-              {savedMoviesList.length}
-            </span>
+        <div className="flex items-center gap-3">
+          {user ? (
+            <form action={logout}>
+              <button 
+                type="submit"
+                className="p-2.5 bg-neutral-900 border border-neutral-800 rounded-full text-neutral-300 hover:text-rose-500 hover:bg-neutral-800 transition-colors shadow-lg relative flex items-center justify-center"
+                title="Sign Out"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </form>
+          ) : (
+            <Link 
+              href="/login"
+              className="px-4 py-2 bg-rose-600 hover:bg-rose-500 rounded-full text-white font-medium text-sm transition-colors shadow-lg shadow-rose-600/20"
+            >
+              Sign In
+            </Link>
           )}
-        </button>
+
+          <button 
+            onClick={() => setWatchlistOpen(true)}
+            className="p-2.5 bg-neutral-900 border border-neutral-800 rounded-full text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors shadow-lg relative"
+          >
+            <Menu className="w-6 h-6" />
+            {isMounted && savedMoviesList.length > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm ring-2 ring-neutral-900">
+                {savedMoviesList.length}
+              </span>
+            )}
+          </button>
+        </div>
       </header>
 
       {/* Main Discover Area */}
